@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BLACKPINK 鐵粉小考</title>
+  <style>
+    body{font-family:Inter,system-ui,Helvetica,Arial;background:#0f1724;color:#e6eef6;margin:0;padding:24px;}
+    .container{max-width:840px;margin:24px auto;padding:20px;background:rgba(255,255,255,0.03);border-radius:12px;box-shadow:0 6px 28px rgba(2,6,23,0.6)}
+    h1{margin:0 0 8px;font-size:22px}
+    p.lead{color:#9aa4b2;margin:0 0 18px}
+    .question{background:#0b1220;padding:14px;border-radius:10px;margin-bottom:12px}
+    .q-title{font-weight:600;margin-bottom:6px}
+    .controls{display:flex;gap:8px;align-items:center;margin-top:6px}
+    button{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:inherit;padding:6px 12px;border-radius:8px;cursor:pointer}
+    .choices{display:flex;gap:10px;margin-top:8px}
+    label.choice{background:rgba(255,255,255,0.02);padding:6px 10px;border-radius:8px;display:flex;align-items:center;gap:6px;cursor:pointer}
+    .footer{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:16px}
+    .score{font-weight:700}
+    .small{font-size:13px;color:#9aa4b2}
+    .btn-primary{background:linear-gradient(90deg,#ff6b6b,#ff3b3b);border:none;color:white}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>BLACKPINK 聲音辨識小考</h1>
+    <p class="lead">播放音檔 → 選出正確答案 → 系統會依「總作答時間」與「答對題數」計分。</p>
+    <button id="startQuiz" class="btn-primary">開始測驗</button>
+    <div id="questions"></div>
+
+    <div class="footer">
+      
+      <button id="submitQuiz">交卷並計分</button>
+      <div class="score">結果：<span id="result">尚未作答</span></div>
+    </div>
+  </div>
+
+  <script>
+    let questions = [
+      {title:"第 1 題 - 請作答",audioUrl:"song/DDU-DU DDU-DU.m4a",options:["Kill This Love","DDU-DU DDU-DU","Boombayah"],answer:"B"},
+      {title:"第 2 題 - 請作答",audioUrl:"song/How You Like That.m4a",options:["How You Like That","Pink Venom","As If It’s Your Last"],answer:"A"},
+      {title:"第 3 題 - 請作答",audioUrl:"song/boom.m4a",options:["Boombayah","Whistle","Stay"],answer:"A"},
+      {title:"第 4 題 - 請作答",audioUrl:"song/whistle.m4a",options:["Whistle","Stay","Don’t Know What To Do"],answer:"A"},
+      {title:"第 5 題 - 請作答",audioUrl:"song/kill this love.m4a",options:["Pink Venom","Kill This Love","Kick It"],answer:"B"},
+      {title:"第 6 題 - 請作答",audioUrl:"song/Lovesick Girls.m4a",options:["Lovesick Girls","Really","Ice Cream"],answer:"A"},
+      {title:"第 7 題 - 請作答",audioUrl:"song/Ice Cream.m4a",options:["Ice Cream","Don’t Know What To Do","See U Later"],answer:"A"},
+      {title:"第 8 題 - 請作答",audioUrl:"song/Pink Venom.m4a",options:["Shut Down","Typa Girl","Pink Venom"],answer:"C"},
+      {title:"第 9 題 - 請作答",audioUrl:"song/Shut Down.m4a",options:["Typa Girl","Shut Down","Ready For Love"],answer:"B"},
+      {title:"第 10 題 - 請作答",audioUrl:"song/As If It’s Your Last.m4a",options:["As If It’s Your Last","Don’t Know What To Do","Stay"],answer:"A"}
+    ];
+
+    let startTime = null;
+    let playTimers = {};
+
+    function render(){
+      const qDiv = document.getElementById('questions');
+      qDiv.innerHTML = '';
+      questions.forEach((q,idx)=>{
+        const div = document.createElement('div');
+        div.className = 'question';
+        div.innerHTML = `
+          <div class="q-title">${q.title}</div>
+          <div class="controls">
+            <audio id="audio${idx}" src="${q.audioUrl}" preload="auto"></audio>
+            <button onclick="playClip(${idx})">播放</button>
+            <button onclick="stopClip(${idx})">停止</button>
+          </div>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="q${idx}" value="A"> A. ${q.options[0]}</label>
+            <label class="choice"><input type="radio" name="q${idx}" value="B"> B. ${q.options[1]}</label>
+            <label class="choice"><input type="radio" name="q${idx}" value="C"> C. ${q.options[2]}</label>
+          </div>
+        `;
+        qDiv.appendChild(div);
+      });
+    }
+
+    function playClip(idx){
+      stopClip(idx);
+      const audio = document.getElementById('audio'+idx);
+      audio.currentTime = 0;
+      audio.play();
+      playTimers[idx] = setTimeout(()=>{audio.pause(); audio.currentTime=0;},50000);
+    }
+
+    function stopClip(idx){
+      const audio = document.getElementById('audio'+idx);
+      if(audio){ audio.pause(); audio.currentTime = 0; }
+      if(playTimers[idx]){ clearTimeout(playTimers[idx]); }
+    }
+
+    document.getElementById('startQuiz').onclick = ()=>{
+      startTime = Date.now();
+      alert('測驗開始！請依序作答。');
+    };
+
+    document.getElementById('submitQuiz').onclick = ()=>{
+      if(!startTime){ alert('請先點「開始測驗」！'); return; }
+      let score=0; let answered=0;
+      questions.forEach((q,idx)=>{
+        const sel=document.querySelector(`input[name='q${idx}']:checked`);
+        if(sel){answered++; if(sel.value===q.answer) score++;}
+      });
+      const totalTime=(Date.now()-startTime)/1000;
+      document.getElementById('result').textContent=`答對 ${score}/${questions.length} 題，用時 ${totalTime.toFixed(1)} 秒`;
+      alert(`測驗結束！\n答對 ${score} 題 / ${questions.length} 題\n總作答時間：${totalTime.toFixed(1)} 秒`);
+    };
+
+    render();
+  </script>
+</body>
+</html>
